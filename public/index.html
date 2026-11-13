@@ -468,10 +468,10 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
           </div>
           <div>
             <label class="field-label">Audio Type</label>
-            <div class="seg-control">
-              <button class="seg-btn active" onclick="setType('sub',this)">SUB</button>
-              <button class="seg-btn" onclick="setType('dub',this)">DUB</button>
-              <button class="seg-btn" onclick="setType('raw',this)">RAW</button>
+            <div class="seg-control" id="audioTypeControl">
+              <button class="seg-btn active" id="typeSubBtn" onclick="setType('sub',this)">SUB</button>
+              <button class="seg-btn" id="typeDubBtn" onclick="setType('dub',this)">DUB</button>
+              <button class="seg-btn" id="typeRawBtn" onclick="setType('raw',this)">RAW</button>
             </div>
           </div>
           <div>
@@ -1540,14 +1540,17 @@ function setSource(s, card) {
   document.getElementById('heavenIdWrap').style.display = s === 'animeheaven' ? 'block' : 'none';
   document.getElementById('animeHeavenVercelNotice').style.display = s === 'animeheaven' ? 'block' : 'none';
 
-  // DesiDub is specifically a Hindi & Regional Dub source — auto-select DUB for immediate server loading
-  if (s === 'desidub' && selType === 'sub') {
-    const dubBtn = document.querySelectorAll('.seg-control .seg-btn')[1]; // DUB button
-    if (dubBtn) {
-      document.querySelectorAll('.seg-control .seg-btn').forEach(b => b.classList.remove('active'));
-      dubBtn.classList.add('active');
-      selType = 'dub';
-    }
+  const subBtn = document.getElementById('typeSubBtn');
+  const dubBtn = document.getElementById('typeDubBtn');
+
+  if (s === 'desidub') {
+    if (dubBtn) dubBtn.textContent = 'HINDI DUB';
+    // Auto-select DUB for DesiDub
+    if (subBtn) subBtn.classList.remove('active');
+    if (dubBtn) dubBtn.classList.add('active');
+    selType = 'dub';
+  } else {
+    if (dubBtn) dubBtn.textContent = 'DUB';
   }
 
   resetServers();
@@ -1631,7 +1634,10 @@ async function loadServers() {
       chip.className = 'server-chip';
       chip.dataset.server = server.name || 'Server';
       if (server.sourceId) chip.dataset.serverId = server.sourceId;
-      chip.textContent = server.name + (server.type ? ` (${server.type.toUpperCase()})` : '');
+      const typeLabel = selSource === 'desidub'
+        ? (server.type === 'dub' ? ' [HINDI DUB]' : ` (${server.type.toUpperCase()})`)
+        : (server.type ? ` (${server.type.toUpperCase()})` : '');
+      chip.textContent = server.name + typeLabel;
       chip.onclick = () => selectServer(chip);
       chips.appendChild(chip);
     });
