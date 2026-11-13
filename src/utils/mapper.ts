@@ -135,11 +135,11 @@ export async function getSiteIds(anilistId: number): Promise<SiteIds | null> {
     siteIds: {},
   };
 
-  // Try Anify for site mappings
+  // Try Anify for site mappings with short timeout so it never blocks the request if down
   try {
     const res = await axios.get(`https://api.anify.tv/info/${anilistId}`, {
       params: { fields: 'mappings' },
-      timeout: 8000,
+      timeout: 2000,
     });
     const mappings: any[] = res.data?.mappings ?? [];
     for (const m of mappings) {
@@ -149,12 +149,15 @@ export async function getSiteIds(anilistId: number): Promise<SiteIds | null> {
       if (m.providerId === 'mal' && !result.malId) result.malId = parseInt(m.id);
     }
   } catch {
-    // Anify down or missing — fall through to direct scraper fallbacks below
+    // Anify down or slow — fall through to direct scraper fallbacks
   }
 
-  await enrichAnimeHeaven(result, result.altTitle);
-  await enrichAnikoto(result, result.altTitle);
-  await enrichDesidub(result, result.altTitle);
+  // Run scrapers in parallel to speed up initial load dramatically
+  await Promise.allSettled([
+    enrichAnimeHeaven(result, result.altTitle),
+    enrichAnikoto(result, result.altTitle),
+    enrichDesidub(result, result.altTitle),
+  ]);
 
   // If still no zoro ID, try a slug guess (title-anilistId format common on HiAnime clones)
   // This is a heuristic and may not always work
@@ -205,9 +208,11 @@ export async function getSiteIdsByMal(malId: number): Promise<SiteIds | null> {
     siteIds: {},
   };
 
-  await enrichAnimeHeaven(result, result.altTitle);
-  await enrichAnikoto(result, result.altTitle);
-  await enrichDesidub(result, result.altTitle);
+  await Promise.allSettled([
+    enrichAnimeHeaven(result, result.altTitle),
+    enrichAnikoto(result, result.altTitle),
+    enrichDesidub(result, result.altTitle),
+  ]);
 
   cacheSet(cacheKey, result);
   return result;

@@ -334,7 +334,11 @@ router.get('/servers', async (req: Request, res: Response) => {
     if (source === 'desidub') allServers = await getDesidubServers(episode.id);
     if (source === 'megaplay') allServers = [{ name: 'MegaPlay Direct', sourceId: String(epNum), type: type === 'dub' ? 'dub' : 'sub' }];
 
-    const filtered = type === 'all' ? allServers : allServers.filter((s: any) => s.type === type);
+    let filtered = type === 'all' ? allServers : allServers.filter((s: any) => s.type === type);
+    // If requested type (e.g. sub on DesiDub, which is exclusively dubbed) has 0 servers, fall back to whatever is available
+    if (!filtered.length && allServers.length > 0) {
+      filtered = allServers;
+    }
     return res.json({
       anilistId: siteIds.anilistId,
       malId: siteIds.malId,
@@ -412,10 +416,15 @@ async function watchHandler(req: Request, res: Response, directAnikotoId?: strin
     if (source === 'anikoto') allServers = await getAnikotoServers(episode.id);
     if (source === 'desidub') allServers = await getDesidubServers(episode.id);
 
-    const filtered = type === 'all'
+    let filtered = type === 'all'
       ? allServers
       : allServers.filter((s: any) => s.type === type);
-    if (!filtered.length) return res.status(404).json({ error: `No ${type} stream available on ${source} for ep ${epNum}` });
+    let resolvedType = type;
+    if (!filtered.length && allServers.length > 0) {
+      filtered = allServers;
+      resolvedType = allServers[0].type || type;
+    }
+    if (!filtered.length) return res.status(404).json({ error: `No stream available on ${source} for ep ${epNum}` });
 
     // `strict=1` alongside `server=` restricts to ONLY that server (no
     // fallback to others) — useful for testing a single server in isolation

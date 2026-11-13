@@ -1535,14 +1535,21 @@ function setType(t, btn) {
 }
 function setSource(s, card) {
   selSource = s;
-  selAnime = null; providerEpisodes = []; providerServers = []; selProviderEpisode = null; selProviderServer = null;
-  document.getElementById('selectedAnime').classList.remove('visible');
-  document.getElementById('searchInput').value = '';
-  document.getElementById('searchInput').placeholder = 'e.g. Naruto, Demon Slayer, One Piece...';
   document.querySelectorAll('.source-card').forEach(c => c.classList.remove('active'));
   card.classList.add('active');
   document.getElementById('heavenIdWrap').style.display = s === 'animeheaven' ? 'block' : 'none';
   document.getElementById('animeHeavenVercelNotice').style.display = s === 'animeheaven' ? 'block' : 'none';
+
+  // DesiDub is specifically a Hindi & Regional Dub source — auto-select DUB for immediate server loading
+  if (s === 'desidub' && selType === 'sub') {
+    const dubBtn = document.querySelectorAll('.seg-control .seg-btn')[1]; // DUB button
+    if (dubBtn) {
+      document.querySelectorAll('.seg-control .seg-btn').forEach(b => b.classList.remove('active'));
+      dubBtn.classList.add('active');
+      selType = 'dub';
+    }
+  }
+
   resetServers();
   updateUrlPreview();
   if (selAnime && document.getElementById('epInput').value) loadServers();
