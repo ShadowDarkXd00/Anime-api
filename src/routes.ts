@@ -10,7 +10,7 @@ import { getAnikotoEpisodes, getAnikotoEpisodesById, getAnikotoServers, getAniko
 import { getMegaPlayStream } from './scrapers/megaplay';
 import { getDesidubEpisodes, getDesidubServers, getDesidubStream } from './scrapers/desidub';
 import { getAnimeDetails, getEpisodes as getMalEpisodes, getEpisode as getMalEpisode, getAllEpisodes as getAllMalEpisodes, getCharacters, getCharacterDetails, getAnimePictures, getCharacterPictures, getAnimeThemes, getAnimeVideos, getRecommendations, searchAnime, getExternalLinks, getStreamingPlatforms, debugSearchHtml, MalEpisode } from './scrapers/mal';
-import { getSeasonNow, getTopBanners, getStreamingEpisodes, AniListStreamingEpisode, getAnimeImages as getAnilistAnimeImages } from './scrapers/anilist';
+import { getSeasonNow, getTopBanners, getStreamingEpisodes, AniListStreamingEpisode, getAnimeImages as getAnilistAnimeImages, getAnimeRelations } from './scrapers/anilist';
 import { getEpisodeThumbnail as getTmdbEpisodeThumbnail, getEpisodeData as getTmdbEpisodeData, getShowEpisodeCount as getTmdbEpisodeCount, getAnimeImages as getTmdbAnimeImages, extractSeasonHint } from './scrapers/tmdb';
 import { getKitsuAnimeId, getEpisodeThumbnail as getKitsuEpisodeThumbnail, getEpisodeData as getKitsuEpisodeData, getAnimeImages as getKitsuAnimeImages } from './scrapers/kitsu';
 
@@ -982,6 +982,24 @@ router.get('/anilist/episodes', async (req: Request, res: Response) => {
     return res.json({ malId, episodes });
   } catch (e: any) {
     return res.status(502).json({ error: 'AniList episodes fetch failed', detail: aniListErrorDetail(e) });
+  }
+});
+
+// GET /api/anime/relations?id=16498 or ?anilistId=16498 or ?malId=16498
+router.get('/anime/relations', async (req: Request, res: Response) => {
+  const id = parseInt((req.query.id || req.query.anilistId) as string, 10);
+  const malId = parseInt(req.query.malId as string, 10);
+
+  if (isNaN(id) && isNaN(malId)) {
+    return res.status(400).json({ error: 'id (AniList ID) or malId required' });
+  }
+
+  try {
+    const data = await getAnimeRelations(isNaN(id) ? undefined : id, isNaN(malId) ? undefined : malId);
+    if (!data) return res.status(404).json({ error: 'Anime relations not found' });
+    return res.json(data);
+  } catch (e: any) {
+    return res.status(502).json({ error: 'Relations fetch failed', detail: e?.message });
   }
 });
 

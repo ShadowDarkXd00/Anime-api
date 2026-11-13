@@ -233,3 +233,86 @@ export async function getAnimeImages(malId: number, isList = false): Promise<Ani
     return { result: null, log };
   }
 }
+
+export interface AnimeRelationItem {
+  id: number;
+  malId: number | null;
+  title: string;
+  format: string | null;
+  episodes: number | null;
+  coverImage: string | null;
+  relationType: string;
+}
+
+const RELATIONS_QUERY = `
+  query ($id: Int, $idMal: Int) {
+    Media(id: $id, idMal: $idMal, type: ANIME) {
+      id
+      idMal
+      title { english romaji userPreferred }
+      format
+      episodes
+      relations {
+        edges {
+          relationType
+          node {
+            id
+            idMal
+            type
+            title { english romaji userPreferred }
+            format
+            episodes
+            coverImage { large medium }
+          }
+        }
+      }
+    }
+  }`;
+
+export async function getAnimeRelations(id?: number, malId?: number): Promise<{
+  current: { id: number; malId: number | null; title: string };
+  relations: AnimeRelationItem[];
+  seasons: AnimeRelationItem[];
+} | null> {
+  const cacheKey = `anilist:relations:${id || ''}:${malId || ''}`;
+  const cached = cacheGet<any>(cacheKey);
+  if (cached) return cached;
+
+  const res = await anilistClient.post('', {
+    query: RELATIONS_QUERY,
+    variables: { id: id || undefined, idMal: malId || undefined },
+  });
+
+  const media = res.data?.data?.Media;
+  if (!media) return null;
+
+  const current = {
+    id: media.id,
+    malId: media.idMal ?? null,
+    title: media.title?.userPreferred || media.title?.english || media.title?.romaji || 'Unknown',
+  };
+
+  const edges: any[] = media.relations?.edges || [];
+  const relations: AnimeRelationItem[] = [];
+
+  for (const edge of edges) {
+    if (edge.node?.type !== 'ANIME') continue;
+    relations.push({
+      id: edge.node.id,
+      malId: edge.node.idMal ?? null,
+      title: edge.node.title?.userPreferred || edge.node.title?.english || edge.node.title?.romaji || '',
+      format: edge.node.format || null,
+      episodes: edge.node.episodes || null,
+      coverImage: edge.node.coverImage?.large || edge.node.coverImage?.medium || null,
+      relationType: edge.relationType,
+    });
+  }
+
+  // Seasons: PREQUEL, SEQUEL, PARENT, ALTERNATIVE, SIDE_STORY
+  const seasonTypes = new Set(['PREQUEL', 'SEQUEL', 'PARENT', 'ALTERNATIVE', 'SIDE_STORY', 'SUMMARY']);
+  const seasons = relations.filter(r => seasonTypes.has(r.relationType));
+
+  const result = { current, relations, seasons };
+  cacheSet(cacheKey, result, 'episodes');
+  return result;
+}

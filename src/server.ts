@@ -42,11 +42,10 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🟢 AniVault API running on http://localhost:${PORT}`);
-  console.log(`📄 Docs + Tester: http://localhost:${PORT}/`);
-  console.log(`🔗 API base:      http://localhost:${PORT}/api\n`);
-
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🟢 AniShadow API running on port ${PORT}`);
+  console.log(`📄 Docs + Tester: http://0.0.0.0:${PORT}/`);
+  console.log(`🔗 API base:      http://0.0.0.0:${PORT}/api\n`);
 });
 
 export default app;

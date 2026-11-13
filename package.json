@@ -1,7 +1,7 @@
 {
-  "name": "anivault-api",
+  "name": "anishadow-api",
   "version": "1.0.0",
-  "description": "Anime streaming scraper API — AniVault backend",
+  "description": "Anime streaming scraper API — AniShadow backend",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

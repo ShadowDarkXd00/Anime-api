@@ -1,8 +1,8 @@
 <div align="center">
 
-# AniVault Scraper API
+# AniShadow Scraper API
 
-**The video-sourcing and metadata backend for [AniVault](https://www.anivault.co).**
+**The video-sourcing and metadata backend for AniShadow.**
 
 ![Views](https://visitor-badge.laobi.icu/badge?page_id=SH0MIK.Anivault-Scraper)
 [![Discord](https://img.shields.io/badge/Join%20Discord-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/QK2dAVgK2a)

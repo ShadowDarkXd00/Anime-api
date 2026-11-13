@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AniVault API — Docs & Tester</title>
+<title>AniShadow API — Docs & Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@~1/dist/hls.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -266,7 +266,7 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
 <!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sidebar-logo">
-    <div class="wordmark">Ani<span>Vault</span> API</div>
+    <div class="wordmark">Ani<span>Shadow</span> API</div>
     <div class="version">v1.9.4 · Railway</div>
   </div>
   <div class="nav-section">
@@ -325,7 +325,7 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
 
   <!-- HERO -->
   <section class="hero" id="overview">
-    <div class="hero-eyebrow">// AniVault API — Documentation</div>
+    <div class="hero-eyebrow">// AniShadow API — Documentation</div>
     <h1>Stream Anything.<br><span class="dim">From Anywhere.</span></h1>
     <p class="hero-desc">A unified REST API to fetch anime stream URLs and embed links across multiple sources, addressed by MAL or AniList ID. Railway-ready, zero config.</p>
     <div class="hero-pills">
@@ -408,7 +408,7 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
         <div class="tester-dot" style="background:#ff5f57"></div>
         <div class="tester-dot" style="background:#febc2e"></div>
         <div class="tester-dot" style="background:#28c840"></div>
-        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px">anivault-api · tester</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px">anishadow-api · tester</span>
       </div>
 
       <div class="tester-body">
@@ -440,6 +440,15 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
           <button class="clear-btn" onclick="clearSelection()">×</button>
         </div>
 
+        <!-- SEASONS & RELATIONS SWITCHER -->
+        <div id="seasonsWrap" style="margin-bottom:20px;display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="field-label" style="margin-bottom:0">Seasons & Related Anime</span>
+            <span id="seasonsLoading" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+          </div>
+          <div id="seasonsList" style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px"></div>
+        </div>
+
         <!-- ANIMEHEAVEN ID -->
         <div id="heavenIdWrap" style="margin-bottom:20px;display:none">
           <label class="field-label">AnimeHeaven ID</label>
@@ -451,7 +460,11 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
         <div class="field-row-3" style="margin-bottom:20px">
           <div>
             <label class="field-label">Episode Number</label>
-            <input class="field-input" id="epInput" type="number" min="1" value="1" placeholder="1" onchange="onEpChange()" />
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button type="button" class="seg-btn" id="prevEpBtn" onclick="switchEpisode(-1)" title="Previous Episode" style="padding:10px 14px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer">◀</button>
+              <input class="field-input" id="epInput" type="number" min="1" value="1" placeholder="1" onchange="onEpChange()" style="text-align:center" />
+              <button type="button" class="seg-btn" id="nextEpBtn" onclick="switchEpisode(1)" title="Next Episode" style="padding:10px 14px;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer">▶</button>
+            </div>
           </div>
           <div>
             <label class="field-label">Audio Type</label>
@@ -469,6 +482,15 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
               <button class="seg-btn" onclick="setEndpoint('episodes',this)">Episodes</button>
             </div>
           </div>
+        </div>
+
+        <!-- QUICK EPISODE SELECTOR -->
+        <div id="epQuickSelectorWrap" style="margin-bottom:20px;display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <label class="field-label" style="margin-bottom:0">Quick Episode Switcher</label>
+            <span id="epQuickCount" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+          </div>
+          <div id="epQuickGrid" style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto;padding:8px;background:var(--surface);border-radius:8px;border:1px solid var(--border)"></div>
         </div>
 
         <!-- SOURCE -->
@@ -564,6 +586,18 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
           </div>
 
           <div class="result-pane" id="pane-embed">
+            <!-- Player Episode Switcher Bar -->
+            <div id="playerEpBar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;background:var(--surface);padding:8px 14px;border-radius:8px;border:1px solid var(--border);flex-wrap:wrap;gap:8px">
+              <div style="font-family:var(--sans);font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px">
+                <span style="color:var(--muted)">Now Watching:</span>
+                <span id="playerEpIndicator" style="color:var(--accent);font-family:var(--mono)">Ep 1</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="seg-btn" onclick="switchEpisode(-1, true)" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">◀ Prev Ep</button>
+                <button type="button" class="seg-btn" onclick="switchEpisode(1, true)" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Next Ep ▶</button>
+                <button type="button" class="fetch-btn" id="playerDownloadBtn" onclick="triggerDownload()" style="padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#00b4d8,#0077b6);color:#fff;border:none">⬇ Download</button>
+              </div>
+            </div>
             <div class="embed-preview" id="embedPreview">
               <div class="embed-placeholder">
                 <div class="embed-placeholder-icon">▶</div>
@@ -585,7 +619,7 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
           <div class="tester-dot" style="background:#ff5f57"></div>
           <div class="tester-dot" style="background:#febc2e"></div>
           <div class="tester-dot" style="background:#28c840"></div>
-          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px">anivault-api · endpoint tester</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px">anishadow-api · endpoint tester</span>
         </div>
         <div class="tester-body">
 
@@ -1408,8 +1442,43 @@ GET /api/watch?source=<span class="str">animeheaven</span>&heavenId=<span class=
   </section>
 
   <div style="padding:32px 60px;color:var(--muted);font-family:var(--mono);font-size:11px;border-top:1px solid var(--border);line-height:1.8">
-    AniVault API · Built for educational use · Selectors require periodic maintenance after site updates<br>
+    AniShadow API · Built for educational use · Selectors require periodic maintenance after site updates<br>
     Megacloud keys may rotate — check <a href="https://github.com/ghoshRitesh12/aniwatch-api" target="_blank" style="color:var(--accent2)">aniwatch-api</a> for updates
+  <!-- DOWNLOAD MODAL -->
+  <div id="downloadModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;backdrop-filter:blur(5px);justify-content:center;align-items:center;padding:20px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:500px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.6);position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-family:var(--sans);font-weight:800;font-size:18px;color:var(--text);display:flex;align-items:center;gap:8px">
+          <span>⬇ Download Stream</span>
+        </div>
+        <button onclick="closeDownloadModal()" style="background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;padding:0 4px">&times;</button>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px">CURRENT SELECTION</div>
+        <div id="downloadModalAnime" style="font-family:var(--sans);font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Selected Anime - Episode 1</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">STREAM:</span>
+          <span id="downloadModalType" style="font-family:var(--mono);font-size:12px;color:var(--accent2);font-weight:bold">HLS (.m3u8)</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <a id="downloadDirectBtn" href="#" target="_blank" download style="display:none;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700;font-size:13px;text-align:center">
+          ⬇ Direct Download Video File (.mp4)
+        </a>
+        <button onclick="copyDownloadUrl()" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">
+          📋 Copy Stream Link (for 1DM / VLC / IDM / ffmpeg)
+        </button>
+        <a id="downloadOpenBtn" href="#" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px solid var(--border);color:var(--accent2);text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700;font-size:13px;text-align:center">
+          ▶ Open Stream URL in External Player / New Tab
+        </a>
+      </div>
+
+      <div style="margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.5">
+        💡 <b>Tip:</b> In Android, open <b>1DM</b>, choose <i>"Add link"</i> and paste the copied URL to download the entire HLS episode at full multi-threaded speed.
+      </div>
+    </div>
   </div>
 
 </main>
@@ -1575,7 +1644,75 @@ async function loadServers() {
     label.style.display = 'none';
   }
 }
+function switchEpisode(delta, autoFetch = false) {
+  const epInput = document.getElementById('epInput');
+  let current = parseInt(epInput.value) || 1;
+  let next = current + delta;
+  if (next < 1) next = 1;
+  if (selAnime && selAnime.episodes && next > selAnime.episodes) {
+    next = selAnime.episodes;
+  }
+  if (next === current && delta !== 0) return;
+  setEpisode(next, autoFetch);
+}
+
+function setEpisode(epNum, autoFetch = false) {
+  const epInput = document.getElementById('epInput');
+  epInput.value = epNum;
+  const playerEp = document.getElementById('playerEpIndicator');
+  if (playerEp) playerEp.textContent = 'Ep ' + epNum;
+  highlightActiveEpChip(epNum);
+  onEpChange();
+  if (autoFetch) {
+    doFetch();
+  }
+}
+
+function renderEpisodeQuickGrid(totalEps) {
+  const wrap = document.getElementById('epQuickSelectorWrap');
+  const grid = document.getElementById('epQuickGrid');
+  const countLabel = document.getElementById('epQuickCount');
+  if (!wrap || !grid) return;
+  const epsCount = parseInt(totalEps);
+  if (!epsCount || epsCount < 1) {
+    wrap.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+  wrap.style.display = 'block';
+  countLabel.textContent = epsCount + ' episodes';
+  const currentEp = parseInt(document.getElementById('epInput').value) || 1;
+  let html = '';
+  const limit = Math.min(epsCount, 500);
+  for (let i = 1; i <= limit; i++) {
+    const isActive = i === currentEp ? ' active' : '';
+    html += `<button type="button" class="seg-btn ep-chip${isActive}" onclick="setEpisode(${i}, true)" style="min-width:38px;padding:6px 10px;font-family:var(--mono);font-size:12px;border-radius:6px;cursor:pointer;">${i}</button>`;
+  }
+  if (epsCount > 500) {
+    html += `<span style="font-family:var(--mono);font-size:11px;color:var(--muted);align-self:center;padding:0 6px;">+${epsCount - 500} more</span>`;
+  }
+  grid.innerHTML = html;
+}
+
+function highlightActiveEpChip(epNum) {
+  const grid = document.getElementById('epQuickGrid');
+  if (!grid) return;
+  const chips = grid.querySelectorAll('.ep-chip');
+  chips.forEach((c, idx) => {
+    if (idx + 1 === epNum) {
+      c.classList.add('active');
+      c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    } else {
+      c.classList.remove('active');
+    }
+  });
+}
+
 function onEpChange() {
+  const ep = document.getElementById('epInput').value || '1';
+  const playerEp = document.getElementById('playerEpIndicator');
+  if (playerEp) playerEp.textContent = 'Ep ' + ep;
+  highlightActiveEpChip(parseInt(ep));
   resetServers();
   updateUrlPreview();
   loadServers();
@@ -1634,6 +1771,8 @@ async function pickAnime(r) {
 
   providerEpisodes = []; providerServers = [];
   resetServers();
+  renderEpisodeQuickGrid(r.episodes);
+  loadSeasons(r);
   updateUrlPreview();
   if (document.getElementById('epInput').value) loadServers();
 }
@@ -1642,8 +1781,119 @@ function clearSelection() {
   selAnime = null;
   document.getElementById('selectedAnime').classList.remove('visible');
   document.getElementById('searchInput').value = '';
+  renderEpisodeQuickGrid(0);
+  const seasonsWrap = document.getElementById('seasonsWrap');
+  if (seasonsWrap) seasonsWrap.style.display = 'none';
   resetServers();
   updateUrlPreview();
+}
+
+let currentDownloadStreamUrl = '';
+
+function triggerDownload() {
+  if (!lastResult) {
+    alert('Please fetch or play an episode stream first!');
+    return;
+  }
+  const ep = document.getElementById('epInput').value || '1';
+  const title = (selAnime && selAnime.title) ? selAnime.title : 'Anime';
+  
+  const modal = document.getElementById('downloadModal');
+  const modalAnime = document.getElementById('downloadModalAnime');
+  const modalType = document.getElementById('downloadModalType');
+  const directBtn = document.getElementById('downloadDirectBtn');
+  const openBtn = document.getElementById('downloadOpenBtn');
+
+  modalAnime.textContent = `${title} — Episode ${ep}`;
+  
+  const embedUrl = primaryEmbedUrl(lastResult);
+  const streamUrl = lastResult.mp4ProxyUrl || lastResult.mp4 || lastResult.hlsProxyUrl || lastResult.m3u8 || embedUrl || '';
+  currentDownloadStreamUrl = streamUrl;
+
+  if (lastResult.mp4 || lastResult.mp4ProxyUrl) {
+    modalType.textContent = 'Direct MP4 Video Stream';
+    directBtn.style.display = 'flex';
+    directBtn.href = lastResult.mp4ProxyUrl || lastResult.mp4;
+    directBtn.setAttribute('download', `${title.replace(/[^a-zA-Z0-9]/g, '_')}_EP${ep}.mp4`);
+  } else if (lastResult.downloadUrl) {
+    modalType.textContent = 'High Speed Direct Download';
+    directBtn.style.display = 'flex';
+    directBtn.href = lastResult.downloadUrl;
+  } else {
+    modalType.textContent = 'HLS Live Stream Playlist (.m3u8)';
+    directBtn.style.display = 'none';
+  }
+
+  openBtn.href = streamUrl;
+  modal.style.display = 'flex';
+}
+
+function closeDownloadModal() {
+  const modal = document.getElementById('downloadModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function copyDownloadUrl() {
+  if (!currentDownloadStreamUrl) return;
+  navigator.clipboard.writeText(currentDownloadStreamUrl).then(() => {
+    alert('Stream URL copied to clipboard! You can paste it into 1DM, IDM, or VLC.');
+  }).catch(() => {
+    prompt('Copy stream URL:', currentDownloadStreamUrl);
+  });
+}
+
+async function loadSeasons(r) {
+  const wrap = document.getElementById('seasonsWrap');
+  const list = document.getElementById('seasonsList');
+  const loading = document.getElementById('seasonsLoading');
+  if (!wrap || !list) return;
+
+  const id = r.id || '';
+  const malId = r.malId || '';
+  if (!id && !malId) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  loading.textContent = 'Loading seasons...';
+  list.innerHTML = '';
+
+  try {
+    const res = await fetch(`${getBase()}/api/anime/relations?id=${encodeURIComponent(id)}&malId=${encodeURIComponent(malId)}`);
+    const data = await res.json();
+    loading.textContent = '';
+    const seasons = data.seasons || data.relations || [];
+    if (!seasons.length) {
+      wrap.style.display = 'none';
+      return;
+    }
+
+    let html = `
+      <div style="flex-shrink:0;background:rgba(230,57,70,0.15);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;font-size:12px;display:flex;flex-direction:column;gap:4px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:700">CURRENT</div>
+        <div style="font-weight:700;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${escapeAttr(r.title)}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.episodes || '?'} eps</div>
+      </div>
+    `;
+
+    seasons.forEach(s => {
+      const typeBadge = s.relationType || 'RELATED';
+      const cleanTitle = s.title || 'Season';
+      html += `
+        <div onclick='pickAnime(${JSON.stringify(s).replace(/'/g,"&#39;")})' style="flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:all 0.15s" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent2);font-weight:700">${escapeAttr(typeBadge)}</div>
+          <div style="font-weight:700;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${escapeAttr(cleanTitle)}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.episodes || '?'} eps · ${s.format || 'TV'}</div>
+        </div>
+      `;
+    });
+
+    list.innerHTML = html;
+  } catch (e) {
+    if (loading) loading.textContent = '';
+    wrap.style.display = 'none';
+  }
 }
 
 // ── URL PREVIEW
@@ -1754,6 +2004,10 @@ function renderEmbedPreview(data) {
   const ep = document.getElementById('embedPreview');
   const subBar = document.getElementById('embedSubBar');
   subBar.innerHTML = '';
+  const currentEpNum = document.getElementById('epInput').value || '1';
+  const playerEp = document.getElementById('playerEpIndicator');
+  if (playerEp) playerEp.textContent = 'Ep ' + currentEpNum;
+
   const embedUrl = primaryEmbedUrl(data);
   const hlsUrl = data.hlsProxyUrl || data.m3u8 || (embedUrl && embedUrl.includes('.m3u8') ? embedUrl : '');
 
@@ -1764,6 +2018,10 @@ function renderEmbedPreview(data) {
     }
     ep.innerHTML = `<video id="hlsPreview" controls playsinline crossorigin="anonymous"></video>`;
     const video = document.getElementById('hlsPreview');
+    video.onended = () => {
+      // Auto-switch to next episode
+      switchEpisode(1, true);
+    };
     if (window.Hls && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -1808,7 +2066,11 @@ function renderEmbedPreview(data) {
 
   if (data.mp4 || data.playbackMode === 'mp4') {
     const videoSrc = data.mp4ProxyUrl || data.mp4 || embedUrl;
-    ep.innerHTML = `<video controls playsinline crossorigin="anonymous" src="${escapeAttr(videoSrc)}"></video>`;
+    ep.innerHTML = `<video id="mp4Preview" controls playsinline crossorigin="anonymous" src="${escapeAttr(videoSrc)}"></video>`;
+    const video = document.getElementById('mp4Preview');
+    if (video) {
+      video.onended = () => switchEpisode(1, true);
+    }
     renderSubtitleBar(document.querySelector('#embedPreview video'), data.subtitles);
     return;
   }
